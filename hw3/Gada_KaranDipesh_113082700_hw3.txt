@@ -1,0 +1,43 @@
+CSE 508 Network Security Homework 3
+Name : Gada, Karan Dipesh
+SBU ID : 113082700
+
+=>DNS Poison
+The DNS poison code reads the handle (either from file or live stream)
+and wait for the DNS query packet on port 53. It then creates a spoofed
+packet from the DNS query packet swapping the source and destination 
+identifiers at each level of the protocol (eg. swapping IP addresses
+of source and destination at the IP layer, etc.)
+It reads the question from the DNS query packet and matches it with the 
+entry in the file [Here i have used Go Map to maintain mapping for between
+the spoofed IP and the DNS Resolution Query].
+If no file is provided all the DNS queries are poisoned. This is only done
+at IPv4. There isn't any support for IPv6 (but it can be done reusing the
+code and changing some IP version type-checking).
+
+=>DNS Detect
+To detect any kind of DNS poisoning we keep track of the DNS queries in
+Go Map by using special structure (Go struct) that maintains TXID,
+total_count (only for the case where 2 legit DNS Query have same TXID) 
+and timestamp of the latest query. We also keep track of all DNS responses
+in Go Map with the same TXID. If the number of responses for a particular
+TXID exceeds the number of requests, we Flag it. Then all the answers for
+the flagged TXID are displayed.
+
+=>DNS Detect Output on Trace_file generated using my dnspoison:
+
+dnsdetect reading from file [traceDump1.pcap]
+2021-04-09 11:53:03.1193116 DNS poisoning attempt
+TXID 50188 Request www.bankofamerica.com
+Answer1 [192.168.141.145]
+Answer2 [171.161.116.100]
+2021-04-09 11:53:09.1199116 DNS poisoning attempt
+TXID 10055 Request www.tcpdump.org
+Answer1 [192.168.141.128]
+Answer2 [192.139.46.66 159.89.89.188]
+
+Here the Trace_file has 2 DNS poison instances and 1 normal DNS resolution
+instance.
+www.tcpdump.org and www.bankofamerica.com (which were poisoned) are detected.
+While www.google.com was not poisoned.
+

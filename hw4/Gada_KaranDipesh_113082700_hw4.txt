@@ -1,0 +1,36 @@
+CSE508: Network Security, Spring 2021
+
+Homework 4: Plugboard Proxy
+---------------------------------------------------------------------------------------------------------------------------
+
+NOTE : Please use go verion 1.16+ as there are certain functions that are supported from 1.16 version
+and so on.
+
+Encyrption:
+Every packet send over the network is encrypted with AES-256 in GCM cipher block mode using a unique nonce for every
+packet. The key for AES is also derived as unique value for every packet with PBKDF2 using randomized salt.
+
+The Server listens to a given port for clients and once the client connects spawns a new goroutine to communicate.
+This ensures Server serves multiple clients simultaneously. The packets received from the client are encrypted and need
+to be decrypted with the salt and nonce prepended with the packet itself before forwarding the packet to the port 
+of the application client wishes to communicate with. The data from the application is again plain text and needs to
+be encrypted using random key(random salt) and random nonce before sending it to the server.
+
+The Client that wishes to connect to application connects to the server using the listening port of the server. The
+client on successful connection spawns goroutines to have incoming and outgoing packets. The data read from standard
+input are encrypted using a random key(random salt) and random nonce before sending it to the server. The packets
+received from the server are decrypted using the prepended salt and nonce before sending it to standard output.
+
+TO RUN:
+1. For Server => go run pbproxy.go -l <listening_port> -p <file_with_passphrase> <destination_ip> <destination_port>
+2. For Client => go run pbproxy.go -p <file_with_passphrase> <listening_server_ip> <listening_server_port>
+
+TEST CASE:
+1. With netcat
+	- Run netcat on Server => nc -l -p 5254
+	- Run proxyServer on Server => go run pbproxy.go -l 1233 -p keyFile localhost 5254
+	- Run proxyClient on Client => go run pbproxy.go -p keyFile <server_ip> 1233
+
+2. With ssh
+	- Run proxyServer => go run pbproxy.go -l 1233 -p keyFile localhost 22
+	- Run proxyClient => ssh -o "ProxyCommand go run pbproxy.go -p keyFile <server_ip> 1233" <username>@localhost
